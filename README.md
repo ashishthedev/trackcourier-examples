@@ -86,6 +86,11 @@ Use a **named** tunnel rather than a quick one if you are going to leave it up.
 A quick tunnel gets a new random hostname every restart, and the webhook you
 registered then points at a hostname that no longer exists.
 
+⚠️ If you already have a `cloudflared` config file, the command above may adopt a
+named tunnel from it rather than creating a quick one, so the hostname you get may
+not be the one you expect. Check the hostname `cloudflared` prints before you
+register it.
+
 ## Verifying the signature
 
 ```python
