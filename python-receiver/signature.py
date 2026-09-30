@@ -4,8 +4,15 @@ The contract, exactly:
 
     X-Trackcourier-Signature: sha256=<hex hmac_sha256(secret, RAW_REQUEST_BODY)>
 
-The secret is per CUSTOMER, not per webhook. Rotating it switches every webhook
-that customer owns, immediately.
+One secret signs every webhook on an account, test and live.
+
+Rotating it is NOT atomic. The rotation returns the new secret at once and
+deliveries start being signed with it straight away, but signing servers pick
+it up independently, so for a while afterwards some deliveries still carry the
+OLD secret's signature. Across the changeover, accept a body that matches
+either secret (app.py checks both), keep both for at least 15 minutes, and drop
+the old one only once 15 minutes have passed without a delivery that only it
+verifies. Fifteen minutes is a floor, not a guaranteed bound.
 """
 
 import hashlib
