@@ -39,8 +39,10 @@ def verify_signature(secret: str, raw_body: bytes, header_value: str) -> bool:
     changes the digest. Capture the body before anything touches it.
 
     An empty secret never verifies: a receiver started without one must not
-    silently accept everything.
+    silently accept everything. Nor does a header that is not ASCII: a digest
+    is hex, and hmac.compare_digest raises on non-ASCII text rather than
+    returning False, which would turn a stranger's header into a 500.
     """
-    if not secret or not header_value:
+    if not secret or not header_value or not header_value.isascii():
         return False
     return hmac.compare_digest(compute_signature(secret, raw_body), header_value)

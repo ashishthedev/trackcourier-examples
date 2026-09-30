@@ -6,8 +6,7 @@ Reference code for integrating with [trackcourier.io](https://trackcourier.io).
 > and readable so you can copy the parts you need. It carries no SLA, and it is
 > not the code that runs our production service.
 
-Currently one example: a **webhook receiver** in Python. Receivers in other
-languages follow.
+Currently one example: a **webhook receiver** in Python.
 
 ## What a webhook delivery looks like
 
@@ -87,7 +86,7 @@ cd trackcourier-examples
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 export TRACKCOURIER_WEBHOOK_SECRET="<your signing secret>"
-.venv/bin/uvicorn app:app --app-dir python-receiver --port 8080
+.venv/bin/python python-receiver/app.py
 ```
 
 Your signing secret is returned once: by your account's first webhook create (test or live), if
@@ -98,10 +97,12 @@ different secret, and only one of them keeps working. Every other create returns
 If you never received the secret, or have lost it, rotate: each rotation returns its new secret,
 once.
 
-Open <http://localhost:8080> to watch deliveries arrive. They are kept in memory, for viewing
-only: a restart clears them, and a real handler must store a delivery durably before it answers
-2xx. Run the tests with `.venv/bin/python -m pytest`. Each one has been watched to fail — a
-test that has never failed has never been shown to guard anything.
+It listens on two ports, both on this machine only: deliveries arrive on **8080**, and a page
+showing them is on **8081**. Open <http://localhost:8081> to watch deliveries arrive. The page
+keeps the most recent 100, in memory, for viewing only: a restart clears them, and a real handler
+must store a delivery durably before it answers 2xx. Run the tests with
+`.venv/bin/python -m pytest`. Each one has been watched to fail — a test that has never failed
+has never been shown to guard anything.
 
 Your receiver has to be reachable from the public internet — we require HTTPS
 and reject hosts that resolve to private, loopback or link-local addresses. In
@@ -112,6 +113,12 @@ cloudflared tunnel --url http://localhost:8080
 ```
 
 Register `https://<the hostname it prints>/webhook` as the webhook's URL.
+
+⚠️ Point the tunnel at port **8080**, never at 8081. The page on 8081 shows every delivery you
+have received, tracking numbers and locations included, and a tunnel serves everything on its
+port to anyone who finds the hostname. Listening only on localhost does not stop that: the
+tunnel runs on your machine, so it connects from localhost too. That is why the page has a port
+of its own. In a named tunnel's config file, the `service` is `http://localhost:8080`.
 
 Use a **named** tunnel rather than a quick one if you are going to leave it up.
 A quick tunnel gets a new random hostname every restart, and the webhook you
@@ -127,14 +134,23 @@ register it.
 ```python
 import hmac, hashlib
 
-def verify(secret: str, raw_body: bytes, header_value: str) -> bool:
+def verify(secret: str, raw_body: bytes, header_value: str | None) -> bool:
     if not secret:  # an HMAC keyed with "" is one anyone can compute
+        return False
+    # Missing or not ASCII: never a valid signature, and compare_digest
+    # raises on either rather than returning False.
+    if not header_value or not header_value.isascii():
         return False
     expected = "sha256=" + hmac.new(
         secret.encode(), raw_body, hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(expected, header_value)
 ```
+
+Answer a delivery it rejects with `401`. We retry anything that is not 2xx, so a delivery signed
+with a secret you have not stored yet arrives again once you have (see
+[Rotating the signing secret](#rotating-the-signing-secret)), and a wrong secret shows up on your
+first test fire as a failed delivery, not as deliveries you acknowledged and could not use.
 
 ### The trap: sign the RAW body, never a re-serialized one
 
@@ -171,12 +187,13 @@ independently, so for a while after you rotate, some deliveries still carry a si
 the **old** one. Verify against the new secret alone and you will reject them. So accept both
 across the changeover, in this order:
 
-1. **Before you rotate,** be ready to accept a secret you have not seen yet. The new secret is
-   live from the moment of rotation, so a delivery signed with it can reach you before you have
-   finished storing the value the call returns, and you cannot stage it in advance, because
-   rotating is what creates it. This receiver answers 2xx to every delivery it records, and a 2xx
-   ends a delivery, so such a delivery is not retried: it shows as `signature FAIL` only until
-   the restart in step 2.
+1. **Before you rotate,** make sure a delivery you cannot verify is answered with a status that
+   is not 2xx. The new secret is live from the moment of rotation, so a delivery signed with it
+   can reach you before you have finished storing the value the call returns, and you cannot
+   stage it in advance, because rotating is what creates it. A 2xx ends a delivery, so answer
+   such a delivery 2xx and it is gone; answer it `401` and we retry it, and the retry verifies
+   once you have stored the new secret in step 2. This receiver answers `401` to any delivery
+   neither of its secrets verifies.
 2. **Rotate, and keep the old secret.** Here: set the returned secret as
    `TRACKCOURIER_WEBHOOK_SECRET`, move the old one to `TRACKCOURIER_WEBHOOK_PREVIOUS_SECRET`, and
    restart the receiver.
@@ -247,6 +264,11 @@ and marks a repeat on the page rather than hiding it.
 - **The signing secret is per account, not per webhook.** One secret signs
   every webhook you own, test and live, and rotating it switches them all —
   but not atomically. See [Rotating the signing secret](#rotating-the-signing-secret).
+- **Your URL is public, so bound what a stranger can cost you.** Anyone who finds
+  it can post to it. This receiver stops reading a body at 1 MiB and answers
+  `413`, gives a body 10 seconds to arrive, answers `503` while 32 connections
+  are open, parses a body only once its signature verifies, and keeps only the
+  most recent 100 deliveries.
 - **Escape what you render.** Courier free-text fields reach you unmodified. The
   receiver here routes every displayed value through `html.escape`.
 
@@ -269,7 +291,8 @@ curl -sS -X POST http://localhost:8080/webhook \
   -d "$BODY"
 ```
 
-Note `printf '%s'` rather than `echo` — `echo` appends a newline, which is one
+The reply says whether the signature verified; a delivery that does not verify is answered
+`401`. Note `printf '%s'` rather than `echo` — `echo` appends a newline, which is one
 more byte in the digest and a signature that will not verify.
 
 ## Licence
