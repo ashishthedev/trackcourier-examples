@@ -1,0 +1,11 @@
+{
+  "headers": {
+    "Content-Type": "application/json",
+    "User-Agent": "Go-http-client/1.1",
+    "X-Trackcourier-Signature": "sha256=cec2a478a0bf61c1c9b0cd04cc7050ff887e6cdde40420836c5958c9914ca995",
+    "X-Webhook-Delivery": "0123456789abcdef-1",
+    "X-Webhook-Event": "tracking.in_transit",
+    "X-Webhook-Mode": "live"
+  },
+  "secret": "test-secret-do-not-use"
+}

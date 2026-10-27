@@ -1,0 +1,1 @@
+{"data":{"checkpoints":null,"courier":"dtdc","delivered_date":null,"destination_city":null,"enqueued_at":"2026-10-27T10:00:00Z","most_recent_status":null,"origin_city":null,"status":"in_transit","tracking_number":"ZZ000000002TEST"},"enqueued_at":"2026-10-27T10:00:00Z","event":"tracking.in_transit"}
