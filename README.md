@@ -6,7 +6,8 @@ Reference code for integrating with [trackcourier.io](https://trackcourier.io).
 > and readable so you can copy the parts you need. It carries no SLA, and it is
 > not the code that runs our production service.
 
-Currently one example: a **webhook receiver** in Python.
+Two examples: a **webhook receiver** in Python, described below, and a **track script and webhook
+receiver** in PHP, in [`php/`](php/).
 
 ## What a webhook delivery looks like
 
