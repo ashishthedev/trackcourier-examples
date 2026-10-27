@@ -123,7 +123,7 @@ def test_as_downloaded_it_refuses_every_update_until_the_secret_is_pasted(receiv
 def test_with_the_secret_pasted_a_live_update_gets_500_until_save_tracking_update_is_written(receiver):
     body, delivery = recorded("live_delivered")
     response, log = receiver.send("with_secret", body, delivery["headers"])
-    assert (response.status_code, response.json()) == (500, {"message": "Not saved; it will be sent again."})
+    assert (response.status_code, response.json()) == (500, {"message": "Not saved."})
     assert "TrackCourier webhook not saved: Write your own code in save_tracking_update()." in log
 
 

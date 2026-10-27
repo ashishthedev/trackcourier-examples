@@ -6,11 +6,12 @@
 // It answers:
 //   405 to anything but a POST
 //   401 until you paste your secret below, and when a signature does not match
-//   400 to a signed body that is not a trackcourier.io update
+//   400 to a signed body without an event, a courier and a tracking number
 //   200 to a test event, without calling your code
 //   200 to a live update once save_tracking_update() has run
 //   500 when save_tracking_update() throws
-// We send an update again later after a 401 or a 500, never after a 200.
+// After a 401 or a 500 we try the update again, up to six attempts in all
+// over about 27 hours; then it is not sent again. After a 200 we stop.
 
 // Your signing secret, exactly as your dashboard showed it.
 const TRACKCOURIER_WEBHOOK_SECRET = 'paste-your-signing-secret-here';
@@ -93,7 +94,7 @@ try {
     );
 } catch (Throwable $e) {
     error_log('TrackCourier webhook not saved: ' . $e->getMessage());
-    respond(500, 'Not saved; it will be sent again.');
+    respond(500, 'Not saved.');
 }
 respond(200, 'Received.');
 
@@ -114,7 +115,8 @@ respond(200, 'Received.');
 // A docket that is not yours must still get a 200: just return.
 function save_tracking_update($tracking_number, $courier, $status, $checkpoints)
 {
-    // Until you replace this line, every live update gets a 500 and is sent
-    // again later, so none is counted as delivered before your code saves it.
+    // Until you replace this line, every live update gets a 500, so none is
+    // counted as delivered before your code saves it. We try each one again,
+    // up to six attempts in all over about 27 hours: write this before then.
     throw new Exception('Write your own code in save_tracking_update().');
 }

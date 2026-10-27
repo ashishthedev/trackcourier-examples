@@ -22,17 +22,20 @@ webhooks, run it on a schedule, for example from cron.
 
 1. Save it on your server and paste your signing secret into `TRACKCOURIER_WEBHOOK_SECRET`.
 2. Write your own code in `save_tracking_update()`, at the bottom. Until you do, the file answers every
-   live update with `500`, so we send it again later instead of counting it delivered.
+   live update with `500`, so it is not counted as delivered. We try each update again, up to six
+   attempts in all over about 27 hours; after the sixth, that update is not sent again.
 3. Add the file's `https://` address as a webhook on your dashboard's
    [Webhooks](https://api.trackcourier.io/dashboard/webhooks) page.
 
 | It receives | It answers |
 |---|---|
 | anything but a `POST` | `405` |
-| an update before you paste your secret, or one whose signature does not match | `401`, and we send it again later |
-| a signed body that is not one of our updates | `400` |
+| an update before you paste your secret, or one whose signature does not match | `401`, and we try again |
+| a signed body without an event, a courier and a tracking number | `400` |
 | a test event | `200`, without calling your code |
-| a live update | `200` once `save_tracking_update()` has run; `500` if it throws, and we send it again later |
+| a live update | `200` once `save_tracking_update()` has run; `500` if it throws, and we try again |
+
+We try an update again after a `401` or a `500`, up to six attempts in all over about 27 hours.
 
 After you rotate your signing secret, put the old one in `TRACKCOURIER_WEBHOOK_PREVIOUS_SECRET` for at
 least 15 minutes, so updates signed with it are still accepted.
