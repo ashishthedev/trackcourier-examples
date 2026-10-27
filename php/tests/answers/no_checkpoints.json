@@ -1,0 +1,18 @@
+{
+  "status": 200,
+  "body": {
+    "success": true,
+    "data": {
+      "AdditionalInfo": "",
+      "Checkpoints": null,
+      "CourierHasNoRecordOfShipment": false,
+      "ExecutionTime": "",
+      "FetchTime": "1.2",
+      "MostRecentStatus": "In Transit",
+      "PODImageUrl": "",
+      "Result": "success",
+      "ShipmentState": "intransit",
+      "isEmptyTable": false
+    }
+  }
+}

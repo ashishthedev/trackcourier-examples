@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "body": {
+    "success": true,
+    "data": {
+      "AdditionalInfo": "",
+      "Checkpoints": [
+        {
+          "Activity": "Delivered",
+          "CheckpointState": "delivered",
+          "CourierName": "DTDC",
+          "Date": "18-Sep-2026",
+          "Location": "New Delhi",
+          "Time": "17:08"
+        },
+        {
+          "Activity": "Out for Delivery",
+          "CheckpointState": "outfordelivery",
+          "CourierName": "DTDC",
+          "Date": "18-Sep-2026",
+          "Location": "New Delhi",
+          "Time": "09:41"
+        }
+      ],
+      "CourierHasNoRecordOfShipment": false,
+      "ExecutionTime": "",
+      "FetchTime": "1.2",
+      "MostRecentStatus": "Delivered",
+      "PODImageUrl": "",
+      "Result": "success",
+      "ShipmentState": "delivered",
+      "isEmptyTable": false
+    }
+  }
+}
